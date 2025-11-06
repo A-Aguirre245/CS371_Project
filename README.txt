@@ -4,7 +4,8 @@ Contact Info
 Group Members & Email Addresses:
 
     Krishna Angal, aean231@uky.edu
-    Person 2, person2@uky.edu
+    Lucy Rosys, lero241@uky.edu
+    Person, person@uky.edu
 
 Versioning
 ==========
