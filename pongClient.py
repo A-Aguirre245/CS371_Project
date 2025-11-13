@@ -1,8 +1,8 @@
 # =================================================================================================
-# Contributing Authors:	    <Anyone who touched the code>
-# Email Addresses:          <Your uky.edu email addresses>
-# Date:                     <The date the file was last edited>
-# Purpose:                  <How this file contributes to the project>
+# Contributing Authors:	    Krishna Angal
+# Email Addresses:          aean231@uky.edu
+# Date:                     11/13/25
+# Purpose:                  Handles game logic and client
 # Misc:                     <Not Required.  Anything else you might want to include>
 # =================================================================================================
 
@@ -83,7 +83,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Your code here to send an update to the server on your paddle's information,
         # where the ball is and the current score.
         # Feel free to change when the score is updated to suit your needs/requirements
-        
+        client.sendall(playerPaddleObj.moving)
         
         # =========================================================================================
 
@@ -176,19 +176,24 @@ def joinServer(ip:str, port:str, errorLabel:tk.Label, app:tk.Tk) -> None:
     # Create a socket and connect to the server
     # You don't have to use SOCK_STREAM, use what you think is best
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((ip, int(port))) # client.connect((HOST, PORT))
 
     # Get the required information from your server (screen width, height & player paddle, "left or "right)
-
+    data = client.recv(1024).decode('utf-8') #receive data from server
+    screenWidth, screenHeight, playerPaddle = data.split(",") #if data is sent in form 400,600,left
+    screenWidth = int(screenWidth)
+    screenHeight = int(screenHeight)
+    playerPaddle = str(playerPaddle)
 
     # If you have messages you'd like to show the user use the errorLabel widget like so
     errorLabel.config(text=f"Some update text. You input: IP: {ip}, Port: {port}")
     # You may or may not need to call this, depending on how many times you update the label
-    errorLabel.update()     
+    errorLabel.update()
 
     # Close this window and start the game with the info passed to you from the server
-    #app.withdraw()     # Hides the window (we'll kill it later)
-    #playGame(screenWidth, screenHeight, ("left"|"right"), client)  # User will be either left or right paddle
-    #app.quit()         # Kills the window
+    app.withdraw()  # Hides the window (we'll kill it later)
+    playGame(screenWidth, screenHeight, ("left"|"right"), client)  # User will be either left or right paddle
+    app.quit()         # Kills the window
 
 
 # This displays the opening screen, you don't need to edit this (but may if you like)
