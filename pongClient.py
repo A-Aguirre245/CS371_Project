@@ -1,7 +1,7 @@
 # =================================================================================================
-# Contributing Authors:	    <Anyone who touched the code>
-# Email Addresses:          <Your uky.edu email addresses>
-# Date:                     <The date the file was last edited>
+# Contributing Authors:	    Lucy Rosys
+# Email Addresses:          lero241@ukyedy
+# Date:                     11/13/25
 # Purpose:                  <How this file contributes to the project>
 # Misc:                     <Not Required.  Anything else you might want to include>
 # =================================================================================================
