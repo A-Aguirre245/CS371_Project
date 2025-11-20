@@ -83,9 +83,23 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Your code here to send an update to the server on your paddle's information,
         # where the ball is and the current score.
         # Feel free to change when the score is updated to suit your needs/requirements
+        data = f"{playerPaddleObj.rect.y},{ball.rect.x},{ball.rect.y},{lScore},{rScore},{sync}"
+        client.sendto(bytes(data, 'utf-8'), server_address)
 
-        
-        
+        received_data = client.recv(1024).decode('utf-8')
+
+        if received_data:
+            # Parse the data: "opponent_paddle_y,ball_x,ball_y,ball_dx,ball_dy,lScore,rScore,opponent_sync"
+            parts = received_data.split(',')
+            opponent_paddle_y = float(parts[0])
+            received_ball_x = float(parts[1])
+            received_ball_y = float(parts[2])
+            received_ball_dx = float(parts[3])
+            received_ball_dy = float(parts[4])
+            received_lScore = int(parts[5])
+            received_rScore = int(parts[6])
+            opponent_sync = int(parts[7])
+
         # =========================================================================================
 
         # Update the player paddle and opponent paddle's location on the screen
@@ -156,7 +170,14 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
-
+        if opponent_sync > sync:
+            ball.rect.x = received_ball_x
+            ball.rect.y = received_ball_y
+            ball.dx = received_ball_dx
+            ball.dy = received_ball_dy
+            lScore = received_lScore
+            rScore = received_rScore
+            sync = opponent_sync  # Catch up to their sync counter
         # =========================================================================================
 
 
@@ -176,6 +197,7 @@ def joinServer(ip:str, port:str, errorLabel:tk.Label, app:tk.Tk) -> None:
     
     # Create a socket and connect to the server
     # You don't have to use SOCK_STREAM, use what you think is best
+
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Get the required information from your server (screen width, height & player paddle, "left or "right)
@@ -223,7 +245,7 @@ def startScreen():
     app.mainloop()
 
 if __name__ == "__main__":
-    #startScreen()
+    startScreen()
     
     # Uncomment the line below if you want to play the game without a server to see how it should work
     # the startScreen() function should call playGame with the arguments given to it by the server this is
