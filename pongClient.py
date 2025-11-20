@@ -167,19 +167,41 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # then you are ahead of them in time, if theirs is larger, they are ahead of you, and you need to
         # catch up (use their info)
         sync += 1
-        # =========================================================================================
+    # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
-        if opponent_sync > sync:
-            ball.rect.x = received_ball_x
-            ball.rect.y = received_ball_y
-            ball.dx = received_ball_dx
-            ball.dy = received_ball_dy
-            lScore = received_lScore
-            rScore = received_rScore
-            sync = opponent_sync  # Catch up to their sync counter
-        # =========================================================================================
 
+        try:
+            received_data = client.recv(1024).decode('utf-8')
+            if received_data:
+                # Parse the data: "opponent_paddle_y,ball_x,ball_y,ball_dx,ball_dy,lScore,rScore,opponent_sync"
+                parts = received_data.split(',')
+                opponent_paddle_y = float(parts[0])
+                received_ball_x = float(parts[1])
+                received_ball_y = float(parts[2])
+                received_ball_dx = float(parts[3])
+                received_ball_dy = float(parts[4])
+                received_lScore = int(parts[5])
+                received_rScore = int(parts[6])
+                opponent_sync = int(parts[7])
+
+                # Update opponent paddle position
+                opponentPaddleObj.rect.y = opponent_paddle_y
+
+                # SYNC LOGIC: If opponent is ahead, use their data
+                if opponent_sync > sync:
+                    ball.rect.x = received_ball_x
+                    ball.rect.y = received_ball_y
+                    ball.dx = received_ball_dx
+                    ball.dy = received_ball_dy
+                    lScore = received_lScore
+                    rScore = received_rScore
+                    sync = opponent_sync  # Catch up to their sync counter
+
+        except BlockingIOError:
+            # No data available, continue with local game state
+            pass
+        # =========================================================================================
 
 
 
