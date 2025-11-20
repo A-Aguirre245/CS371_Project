@@ -61,7 +61,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
 
     sync = 0
 
-    client.setblocking(False)
+    #client.setblocking(False)
 
     while True:
         # Wiping the screen
