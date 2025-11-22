@@ -11,29 +11,38 @@ from asyncio import Handle
 import socket
 import threading
 
-def handle_client(conn1:socket.socket, conn2:socket.socket, address:tuple[str,int], playerName:str) -> None:
-    print(f"New connection from {address} ({playerName})") #server start statement
+def handle_client(conn1:socket.socket, conn2:socket.socket, addr:tuple[str,int], playerName:str) -> None:
+    print(f"New connection from {addr} ({playerName})") #server start statement
+         
     try:
         while True:
             #recieve data from client
-            data = conn1.recv(1024)
-            if not data:
-                print(f"Disconnecting from {address}") #client disconnect statement
+            data1 = conn1.recv(1024)
+            if not data1:
+                print(f"Disconnecting from {addr}") #client disconnect statement
                 break
             
             #forwards data from the other client/player
-            if conn2:
-                conn2.sendall(data)
+            conn2.sendall(data1)
+
+            data2 = conn2.recv(1024)
+            if not data2:
+                print(f"Disconneting from {addr}")
+                break
+
+            conn1.sendall(data2)
 
     except Exception as e:
-        print(f"Error with {address}: {e}")
+        print(f"Error with {addr}: {e}")
     finally:
         conn1.close()
+        conn2.close()
         print(f"Player disconnected") #end of client-server connection
+    
 
 def main() -> None:
-    HOST = "127.0.0.1"
-    PORT = 54321
+    HOST = "0.0.0.0"
+    PORT = 49513
     SCREEN_WIDTH = 640
     SCREEN_HEIGHT = 480
 
@@ -67,6 +76,8 @@ def main() -> None:
     
     thread1.join()
     thread2.join()
+    
+    server.close()
 
 if __name__ == "__main__":
     main()

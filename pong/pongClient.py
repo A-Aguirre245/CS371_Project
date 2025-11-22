@@ -61,7 +61,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
 
     sync = 0
 
-    #client.setblocking(False)
+    #client.setblocking(False) debugging code
 
     while True:
         # Wiping the screen
@@ -86,11 +86,11 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Your code here to send an update to the server on your paddle's information,
         # where the ball is and the current score.
         # Feel free to change when the score is updated to suit your needs/requirements
-        update = f"{playerPaddleObj.rect.y},{ball.rect.x},{ball.rect.y},{lScore},{rScore}"
-        try: 
-            client.sendall(update.encode("utf-8")) #must send data as bytes
-        except Exception as e:
-            print(f"Error sending data: {e}")
+        
+        update = f"{playerPaddleObj.rect.y},{ball.rect.x},{ball.rect.y},{lScore},{rScore}, {sync}"
+        client.sendall(update.encode("utf-8")) #send sync update in bytes
+
+
         # =========================================================================================
 
         # Update the player paddle and opponent paddle's location on the screen
@@ -161,13 +161,11 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
-       
-        #client.sendall(f"{sync}".encode("utf-8")) #send sync update in bytes
 
         #RECEIVE SERVER UPDATE FROM OPPONENT
         try:
             data = client.recv(1024).decode('utf-8') #receive data from server
-            oppPaddle, ballX, ballY, leftScore, rightScore, oppSync = data.split(",")
+            oppPaddle, ballX, ballY, leftScore, rightScore, oppSync = map(int, data.split(","))
             oppPaddle = int(oppPaddle)
             ballX = int(ballX)
             ballY = int(ballY)
@@ -177,7 +175,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
 
             #if their sync is larger, use their info to catch up
             if oppSync > sync:
-                #opponentPaddleObj.rect.y = oppPaddle
+                opponentPaddleObj.rect.y = oppPaddle
                 ball.rect.x = ballX
                 ball.rect.y = ballY
                 lScore = leftScore
@@ -223,7 +221,7 @@ def joinServer(ip:str, port:str, errorLabel:tk.Label, app:tk.Tk) -> None:
 
     # Close this window and start the game with the info passed to you from the server
     app.withdraw()  # Hides the window (we'll kill it later)
-    playGame(screenWidth, screenHeight, {playerPaddle}, client)  # User will be either left or right paddle
+    playGame(screenWidth, screenHeight, playerPaddle, client)  # User will be either left or right paddle
     app.quit()         # Kills the window
 
 
