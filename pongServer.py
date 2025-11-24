@@ -1,13 +1,91 @@
+
 # =================================================================================================
-# Contributing Authors:	    <Anyone who touched the code>
+# Contributing Authors:	    Andres Aguirre
 # Email Addresses:          <Your uky.edu email addresses>
 # Date:                     <The date the file was last edited>
 # Purpose:                  <How this file contributes to the project>
 # Misc:                     <Not Required.  Anything else you might want to include>
 # =================================================================================================
 
+from asyncio import Handle
 import socket
 import threading
+
+def handle_client(conn1:socket.socket, conn2:socket.socket, address:tuple[str,int], playerName:str) -> None:
+    print(f"New connection from {address} ({playerName})") #server start statement
+    try:
+        while True:
+            #recieve data from client
+            data = conn1.recv(1024)
+            if not data:
+                print(f"Disconnecting from {address}") #client disconnect statement
+                break
+            
+            #forwards data from the other client/player
+            if conn2:
+                conn2.sendall(data)
+
+    except Exception as e:
+        print(f"Error with {address}: {e}")
+    finally:
+        conn1.close()
+        print(f"Player disconnected") #end of client-server connection
+
+def get_local_ip():
+    try:
+        # Create a socket object
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Connect to an external address (doesn't actually send data)
+        # This forces the socket to bind to a local interface
+        s.connect(("8.8.8.8", 80))  # Google's DNS server
+        ip_address = s.getsockname()[0]
+        s.close()
+        return ip_address
+    except Exception as e:
+        return f"Error getting local IP: {e}"
+
+def main() -> None:
+    local_ip = get_local_ip()
+    print(f"Local IP Address: {local_ip}")
+    HOST = local_ip
+    PORT = 54321
+    SCREEN_WIDTH = 640
+    SCREEN_HEIGHT = 480
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind((HOST, PORT)) #waits for a connection to local host on port 54321
+    server.listen(2)
+
+    print(f"Server started: Listening on {HOST}:{PORT}")
+
+    print("Waiting for Player1 (Left)")
+    conn1, addr1 = server.accept()
+    print("Player1 Connected!")
+
+    config1 = f"{SCREEN_WIDTH},{SCREEN_HEIGHT},left" #send screen information and which paddle they are
+    conn1.sendall(config1.encode('utf-8'))
+
+    print("Waiting for Player2 (Right)") 
+    conn2, addr2 = server.accept()
+    print("Player2 Connected!")
+
+    config2 = f"{SCREEN_WIDTH},{SCREEN_HEIGHT},right"
+    conn2.sendall(config2.encode('utf-8'))
+
+    thread1 = threading.Thread(target=handle_client, args=(conn1, conn2, addr1, "Player1")) #creates threads to sync both players
+    thread2 = threading.Thread(target=handle_client, args=(conn2, conn1, addr2, "Player2"))
+    thread1.start()
+    thread2.start()
+
+    print("Both players Connected: Game Start!")
+    
+    thread1.join()
+    thread2.join()
+
+if __name__ == "__main__":
+    main()
+
 
 # Use this file to write your server logic
 # You will need to support at least two clients
