@@ -10,11 +10,11 @@ Group Members & Email Addresses:
 Versioning
 ==========
 
-Github Link: 
+Github Link: https://github.com/A-Aguirre245/CS371_Project/
 
 General Info
 ============
-This file describes how to install/run your program and anything else you think the user should know
+Run the server code to start server, and read the IP address and port number from the output. Run the client code to start the client, and input the IP address and port number to the game window. Game will start when both clients have connected.
 
 Install Instructions
 ====================
@@ -25,5 +25,4 @@ Run the following line to install the required libraries for this project:
 
 Known Bugs
 ==========
-- The server doesn't work because the logic isn't yet written.
-- The client doesn't speak to the server
+- Ball position diverges when the paddle position has not updated between clients quickly enough
