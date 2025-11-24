@@ -26,4 +26,4 @@ Run the following line to install the required libraries for this project:
 Known Bugs
 ==========
 - Ball position diverges when the paddle position has not updated between clients quickly enough
-    -This can also cause scores to become different, and one player to win while the other game is still in progress
+    -This can also cause scores to become different, and one player to win while the other player thinks the game is still in progress
