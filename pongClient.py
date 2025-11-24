@@ -1,8 +1,9 @@
+
 # =================================================================================================
-# Contributing Authors:	    Lucy Rosys
-# Email Addresses:          lero241@ukyedy
-# Date:                     11/13/25
-# Purpose:                  <How this file contributes to the project>
+# Contributing Authors:	    Krishna Angal
+# Email Addresses:          aean231@uky.edu
+# Date:                     11/16/25
+# Purpose:                  Handles game logic and client sending and receiving updates
 # Misc:                     <Not Required.  Anything else you might want to include>
 # =================================================================================================
 
@@ -60,6 +61,8 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
 
     sync = 0
 
+    #client.setblocking(False)
+
     while True:
         # Wiping the screen
         screen.fill((0,0,0))
@@ -83,23 +86,11 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Your code here to send an update to the server on your paddle's information,
         # where the ball is and the current score.
         # Feel free to change when the score is updated to suit your needs/requirements
-        data = f"{playerPaddleObj.rect.y},{ball.rect.x},{ball.rect.y},{lScore},{rScore},{sync}"
-        client.sendto(bytes(data, 'utf-8'), server_address)
-
-        received_data = client.recv(1024).decode('utf-8')
-
-        if received_data:
-            # Parse the data: "opponent_paddle_y,ball_x,ball_y,ball_dx,ball_dy,lScore,rScore,opponent_sync"
-            parts = received_data.split(',')
-            opponent_paddle_y = float(parts[0])
-            received_ball_x = float(parts[1])
-            received_ball_y = float(parts[2])
-            received_ball_dx = float(parts[3])
-            received_ball_dy = float(parts[4])
-            received_lScore = int(parts[5])
-            received_rScore = int(parts[6])
-            opponent_sync = int(parts[7])
-
+        update = f"{playerPaddleObj.rect.y},{ball.rect.x},{ball.rect.y},{lScore},{rScore},{sync}"
+        try: 
+            client.sendall(update.encode("utf-8")) #must send data as bytes
+        except Exception as e:
+            print(f"Error sending data: {e}")
         # =========================================================================================
 
         # Update the player paddle and opponent paddle's location on the screen
@@ -167,41 +158,39 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # then you are ahead of them in time, if theirs is larger, they are ahead of you, and you need to
         # catch up (use their info)
         sync += 1
-    # =========================================================================================
+        # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
-
+       
+        #RECEIVE SERVER UPDATE FROM OPPONENT
         try:
-            received_data = client.recv(1024).decode('utf-8')
-            if received_data:
-                # Parse the data: "opponent_paddle_y,ball_x,ball_y,ball_dx,ball_dy,lScore,rScore,opponent_sync"
-                parts = received_data.split(',')
-                opponent_paddle_y = float(parts[0])
-                received_ball_x = float(parts[1])
-                received_ball_y = float(parts[2])
-                received_ball_dx = float(parts[3])
-                received_ball_dy = float(parts[4])
-                received_lScore = int(parts[5])
-                received_rScore = int(parts[6])
-                opponent_sync = int(parts[7])
+            data = client.recv(1024).decode('utf-8')
+    
+            # Split by comma and take the last 6 values (most recent update)
+            values = data.split(",")
+            if len(values) >= 6:
+                oppPaddle, ballX, ballY, leftScore, rightScore, oppSync = values[-6:]
+                oppPaddle = int(oppPaddle)
+                ballX = int(ballX)
+                ballY = int(ballY)
+                leftScore = int(leftScore)
+                rightScore = int(rightScore)
+                oppSync = int(oppSync)
+            
+            opponentPaddleObj.rect.y = oppPaddle
 
-                # Update opponent paddle position
-                opponentPaddleObj.rect.y = opponent_paddle_y
-
-                # SYNC LOGIC: If opponent is ahead, use their data
-                if opponent_sync > sync:
-                    ball.rect.x = received_ball_x
-                    ball.rect.y = received_ball_y
-                    ball.dx = received_ball_dx
-                    ball.dy = received_ball_dy
-                    lScore = received_lScore
-                    rScore = received_rScore
-                    sync = opponent_sync  # Catch up to their sync counter
-
-        except BlockingIOError:
-            # No data available, continue with local game state
+            if oppSync > sync:
+                opponentPaddleObj.rect.y = oppPaddle
+                ball.rect.x = ballX
+                ball.rect.y = ballY
+                lScore = leftScore
+                rScore = rightScore
+                sync = oppSync
+        except Exception as e:
+            print(f"Error receiving data: {e}")
             pass
         # =========================================================================================
+
 
 
 
@@ -216,24 +205,30 @@ def joinServer(ip:str, port:str, errorLabel:tk.Label, app:tk.Tk) -> None:
     # port          A string holding the port the server is using
     # errorLabel    A tk label widget, modify it's text to display messages to the user (example below)
     # app           The tk window object, needed to kill the window
-    
+
+    # =========================================================================================
     # Create a socket and connect to the server
     # You don't have to use SOCK_STREAM, use what you think is best
-
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((ip, int(port))) # client.connect((HOST, PORT))
 
     # Get the required information from your server (screen width, height & player paddle, "left or "right)
-
+    data = client.recv(1024).decode('utf-8') #receive data from server
+    screenWidth, screenHeight, playerPaddle = data.split(",") #if data is sent in form 400,600,left
+    screenWidth = int(screenWidth)
+    screenHeight = int(screenHeight)
+    playerPaddle = str(playerPaddle)
+    # =========================================================================================
 
     # If you have messages you'd like to show the user use the errorLabel widget like so
     errorLabel.config(text=f"Some update text. You input: IP: {ip}, Port: {port}")
     # You may or may not need to call this, depending on how many times you update the label
-    errorLabel.update()     
+    errorLabel.update()
 
     # Close this window and start the game with the info passed to you from the server
-    #app.withdraw()     # Hides the window (we'll kill it later)
-    #playGame(screenWidth, screenHeight, ("left"|"right"), client)  # User will be either left or right paddle
-    #app.quit()         # Kills the window
+    app.withdraw()  # Hides the window (we'll kill it later)
+    playGame(screenWidth, screenHeight, playerPaddle, client)  # User will be either left or right paddle
+    app.quit()         # Kills the window
 
 
 # This displays the opening screen, you don't need to edit this (but may if you like)
@@ -241,7 +236,7 @@ def startScreen():
     app = tk.Tk()
     app.title("Server Info")
 
-    image = tk.PhotoImage(file="./assets/images/logo.png")
+    image = tk.PhotoImage(file="/Users/lucy/Desktop/CS371_Project_Fall2025/pongFIN/assets/images/logo.png")
 
     titleLabel = tk.Label(image=image)
     titleLabel.grid(column=0, row=0, columnspan=2)
@@ -272,4 +267,4 @@ if __name__ == "__main__":
     # Uncomment the line below if you want to play the game without a server to see how it should work
     # the startScreen() function should call playGame with the arguments given to it by the server this is
     # here for demo purposes only
-    playGame(640, 480,"left",socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    #playGame(640, 480,"left",socket.socket(socket.AF_INET, socket.SOCK_STREAM))
